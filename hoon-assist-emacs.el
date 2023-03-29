@@ -1,69 +1,109 @@
 (require 'json)
+(require 'shr)
 
-(defun xah-print-hash (hashtable)
-  "Prints the hashtable, each line is key, val"
-  (maphash
-   (lambda (k v)
-     (insert "this is the key:  ")
-     (insert (format "%s" k))
-     (insert "\n")
-     (insert "this is the val:  ")
-     (insert "<html><body>")
-     (insert (format "%s" v))
-     (insert "</body></html>"))
-   hashtable
-   ))
+(global-set-key (kbd "<f7>") 'get-token-definition)
 
-(defun prep-foo-buffer ()
-  (progn
-   (if (get-buffer "foo")(kill-buffer "foo"))
-   (generate-new-buffer "foo")
-   (with-current-buffer "foo" (html-mode))
-   (with-current-buffer "foo" (goto-char 0))
-   (with-current-buffer "foo" (insert "json is next3\n"))
-   ))
+(defun json-to-list (json lst)
+  (if (cdr json)      
+      (progn
+	(setq lst (cons  (cons (car (gethash "keys" (car json))) (gethash "doc" (car json))) lst))      
+	(json-to-list (cdr json) lst))
+    (setq lst (cons  (cons (gethash "keys" (car json)) (gethash "doc" (car json))) lst))))
 
-(defun get-rune-desc ()
+(defun make-ht-recurse (lst aa)
+  ;;lst is the list created by alldefs; aa is the (empty) hash table
+  (if (cdr lst)      
+      (progn
+        (puthash (caar lst) (cdar lst) aa)       
+	(make-ht-recurse (cdr lst) aa))
+    (progn
+      (puthash (caar lst) (cdar lst) aa)
+      aa)))
+
+(setq alldefs
+  ;;note that json is a list of hash tables
   (let* ((json-object-type 'hash-table)
 	 (json-array-type 'list)
 	 (json-key-type 'string)
 	 (json (json-read-file "/home/mbc/projects/hoon-assist-emacs/hoon-dictionary.json"))
-	 (first (caar json))
-	 (dummy (prep-foo-buffer))
-	 )
-;;    (gethash rune json)
-;; (with-current-buffer "foo"  (insert  (format "%s"  first)))
- (with-current-buffer "foo"  (xah-print-hash  (car json)))
-    ))
+	 (mylist (json-to-list json '()))
+	 (aa (make-hash-table :test 'equal :size 10))
+	 (bb (make-ht-recurse mylist aa)))  
+    bb))
 
-;;(generate-new-buffer "foo")
-;;(with-current-buffer "foo" (erase-buffer))
-;;(with-current-buffer "foo" (html-mode))
- ;;(with-current-buffer "foo" ; replace with the name of the buffer you want to append
- ;   (goto-char 0)
-    (get-rune-desc  )
-;;  (insert  (json-read-file "/home/mbc/projects/hoon-assist-emacs/hoon-dictionary.json")))
- 
+(defun prep-foo-buffer (html)
+  (progn
+   (if (get-buffer "*html*")(kill-buffer "*html*"))
+   (generate-new-buffer "foo")
+   (with-current-buffer "foo" (erase-buffer))
+   (with-current-buffer "foo" (goto-char 0))
+   (with-current-buffer "foo" (insert (format "%s" html)))
+   (shr-render-buffer "foo")
+   (kill-buffer "foo")
+ ;  (split-window-right)
+;   (set-window-buffer nil "*html*")
+ ;  (other-window 1)
+   ))
 
+;;(window-list)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(defun my-json-string-valid-p (string)
-  "Validates a JSON string."
-  (condition-case nil
+(defun get-token-definition ()
+  (interactive)
+  ;; (condition-case nil
+  (if (get-buffer "*html*")
       (progn
-        (json-read-from-string string)
-        t)
-    (error nil)))
+	(delete-window)
+	(kill-buffer "*html*"))	   
+      (let* ((current-loc (point))
+	     (before-space (re-search-forward "[ (\n]" nil nil -1))
+	     (dummy (goto-char current-loc))
+	     (after-space (re-search-forward "[ (\n]" nil nil 1))
+	     (aa (string-trim (buffer-substring-no-properties  before-space  (- after-space 1) )))
+	     (def (gethash aa alldefs)) ;;gets the definition      
+	     )
+	(prep-foo-buffer def))
+      )
+  ;;  (error nil)
+    )
+
+
+
+
+;; (defun process-json-old (json newlst)
+;;   (if (cdr json)      
+;;     (progn
+;;       (setq newlst (cons  (car json) newlst))	    
+;;       (process-json (cdr json) newlst))
+  
+;;     (setq newlst (cons (car json) newlst))
+;;     ))
+
+
+;; (let* ((a '(1 2 3 4))
+;;        (b (process-json a '()))
+;;        (dummy (prep-foo-buffer))
+;;        )
+;; (with-current-buffer "foo" (insert  (format "%s" b)))
+;;   )
+
+(defun mbc-print-hash (hashtable)
+  "Prints the hashtable, each line is key, val"
+  (maphash
+   (lambda (k v)
+     (insert "key:  ")
+     (insert (format "%s" k))
+     (insert "\n")
+     (insert "val:  ")
+     (insert (format "%s" v))
+     (insert "\n\n------------------------\n")
+     )
+   hashtable
+   ))
+
+
+
+(defun pp-hash (table)
+  (let ((data (nthcdr 2 (nbutlast
+                         (split-string (pp-to-string table) "[()]")
+                         2))))
+    (insert (concat "(" (car data) ")"))))
