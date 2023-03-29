@@ -1,0 +1,20 @@
+[
+  {
+    "path" : "/home/mbc/projects/docs/hoon/reference/rune/",
+    "parse_here" : true,
+    "recursive" : false,
+    "parser" : "one_char_rune"
+  },
+  {
+    "path" : "/home/mbc/projects/docs/hoon/reference/rune/",
+    "parse_here" : false,
+    "recursive" : true,
+    "parser" : "two_char_rune"
+  },
+  {
+    "path" : "/home/mbc/projects/docs/hoon/reference/stdlib/",
+    "parse_here" : true,
+    "recursive" : true,
+    "parser" : "library"
+  }
+]

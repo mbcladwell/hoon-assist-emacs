@@ -2,6 +2,7 @@
 (require 'shr)
 
 (global-set-key (kbd "<f7>") 'get-token-definition)
+(setq dict-file "/home/mbc/projects/hoon-assist-emacs/hoon-dictionary.json")
 
 (defun json-to-list (json lst)
   (if (cdr json)      
@@ -25,7 +26,7 @@
   (let* ((json-object-type 'hash-table)
 	 (json-array-type 'list)
 	 (json-key-type 'string)
-	 (json (json-read-file "/home/mbc/projects/hoon-assist-emacs/hoon-dictionary.json"))
+	 (json (json-read-file dict-file))
 	 (mylist (json-to-list json '()))
 	 (aa (make-hash-table :test 'equal :size 10))
 	 (bb (make-ht-recurse mylist aa)))  
@@ -61,11 +62,12 @@
 	     (aa (string-trim (buffer-substring-no-properties  before-space  (- after-space 1) )))
 	     (def (gethash aa alldefs)) ;;gets the definition      
 	     )
-	(prep-foo-buffer def))
+	(if (eq nil def) 
+	    (message "%s %s" aa "is not in the dictionary!")
+	  (prep-foo-buffer def))
       )
   ;;  (error nil)
-    )
-
+    ))
 
 
 
